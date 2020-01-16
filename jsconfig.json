@@ -1,3 +1,8 @@
 {
-  "compilerOptions": { "esModuleInterop": true, "checkJs": true, "module": "esnext" }
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "checkJs": true,
+    "module": "esnext"
+  },
+  "include": ["bin/*.js", "src/*.js"]
 }

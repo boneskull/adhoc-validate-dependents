@@ -1,0 +1,30 @@
+{
+  "name": "adhoc-validate-dependents",
+  "version": "0.0.0",
+  "description": "adhoc script for finding pkg dependents and download counts",
+  "module": "src/validate-dependents.js",
+  "dependencies": {
+    "csv-parse": "^4.8.5",
+    "csv-stringify": "^5.3.6",
+    "dayjs": "^1.8.19",
+    "lodash.get": "^4.4.2",
+    "npm-download-counts": "^0.3.0",
+    "pacote": "^10.3.0",
+    "tiny-async-pool": "^1.1.0"
+  },
+  "private": true,
+  "devDependencies": {
+    "@types/node": "^13.1.7"
+  },
+  "author": "Christopher Hiller <boneskull@boneskull.com> (https://boneskull.com/)",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=12"
+  },
+  "prettier": {
+    "bracketSpacing": false,
+    "singleQuote": true,
+    "endOfLine": "auto"
+  }
+}

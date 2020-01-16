@@ -15,7 +15,7 @@ const parseAsync = promisify(parse);
  * Check a dependency for current dependents
  * @param {string} dependencyName - Name of dependency
  * @param {string} csvFilepath - Path to a CSV file
- * @param {Partial<ValidateDependentsOptions>} [opts]
+ * @param {Partial<ValidateDependentsOptions>} [opts] - Options
  */
 export async function validateDependents(
   dependencyName,
@@ -49,16 +49,13 @@ export async function validateDependents(
           get(manifest, `peerDependencies.${dependencyName}`);
 
         if (spec) {
+          /** @type {{count: number}[]} */
           const data = await npmDownloadCounts(
             dependentName,
             startDate,
             endDate
           );
-          const downloadCount = data.reduce(
-            /** @param {number} acc */
-            (acc, {count}) => acc + count,
-            0
-          );
+          const downloadCount = data.reduce((acc, {count}) => acc + count, 0);
           return {
             dependentName,
             downloadCount,
@@ -68,7 +65,7 @@ export async function validateDependents(
       }
     )
   )
-    .filter(result => result && result.downloadCount >= minDownloadCount)
+    .filter(result => get(result, 'downloadCount') >= minDownloadCount)
     .sort((a, b) => b.downloadCount - a.downloadCount);
 }
 

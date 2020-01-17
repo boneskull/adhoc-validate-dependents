@@ -12,6 +12,28 @@ const pacote = require('pacote');
 const parseAsync = promisify(parse);
 
 /**
+ * Get the project manifest from npm (its `package.json` w/ other stuff)
+ * @param {string} name - Name of project for which to fetch manifest
+ */
+async function getManifest(name) {
+  return pacote.manifest(`${name}@latest`, {
+    fullMetadata: true
+  });
+}
+
+/**
+ * Get d/l counts for a package over a period of time
+ * @param {string} name - Name of package for which to get d/l counts
+ * @param {Date} startDate - Start date of download counts
+ * @param {Date} [endDate] - End date of download counts (defaults to today)
+ */
+export async function getDownloadCounts(name, startDate, endDate = new Date()) {
+  /** @type {{count: number}[]} */
+  const data = await npmDownloadCounts(name, startDate, endDate);
+  return data.reduce((acc, {count}) => acc + count, 0);
+}
+
+/**
  * Check a dependency for current dependents
  * @param {string} dependencyName - Name of dependency
  * @param {string} csvFilepath - Path to a CSV file
@@ -20,26 +42,25 @@ const parseAsync = promisify(parse);
 export async function validateDependents(
   dependencyName,
   csvFilepath,
-  {limit = Infinity, minDownloadCount = 1_000_000, concurrency = Infinity} = {}
+  {
+    limit = Infinity,
+    minDownloadCount = 1_000_000,
+    concurrency = Infinity,
+    startDate = dayjs()
+      .subtract(1, 'month')
+      .toDate(),
+    endDate = new Date()
+  } = {}
 ) {
   const raw = await fs.readFile(csvFilepath, 'utf8');
   const csv = await parseAsync(raw);
 
-  const startDate = dayjs()
-    .subtract(1, 'month')
-    .toDate();
-  const endDate = new Date();
   return (
     await asyncPool(
       concurrency,
-      csv.slice(0, limit).map(([dependentName]) => ({
-        dependencyName,
-        dependentName
-      })),
-      async ({dependencyName, dependentName}) => {
-        const manifest = await pacote.manifest(`${dependentName}@latest`, {
-          fullMetadata: true
-        });
+      csv.slice(0, limit).map(([dependentName]) => dependentName),
+      async dependentName => {
+        const manifest = await getManifest(dependentName);
 
         const spec =
           get(manifest, `dependencies.${dependencyName}`) ||
@@ -49,15 +70,13 @@ export async function validateDependents(
           get(manifest, `peerDependencies.${dependencyName}`);
 
         if (spec) {
-          /** @type {{count: number}[]} */
-          const data = await npmDownloadCounts(
+          const downloadCount = await getDownloadCounts(
             dependentName,
             startDate,
             endDate
           );
-          const downloadCount = data.reduce((acc, {count}) => acc + count, 0);
           return {
-            dependentName,
+            name: dependentName,
             downloadCount,
             description: manifest.description
           };
@@ -74,4 +93,6 @@ export async function validateDependents(
  * @property {number} limit - Process this many dependents, then stop
  * @property {number} concurrency - Restrict to this many concurrent operations
  * @property {number} minDownloadCount - Filter out dependents with fewer than this number
+ * @property {Date} startDate - Date from which to get download counts
+ * @property {Date} endDate - Date to which to get download counts
  */
